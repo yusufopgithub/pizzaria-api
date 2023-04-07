@@ -14,7 +14,10 @@ class PizzaGateway
         $sql = "SELECT *
                 FROM orders"; // selecteerd alle orders in de database
 
-        $result = $this->conn->query($sql);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
 
         $data = [];
 
@@ -29,11 +32,13 @@ class PizzaGateway
     {
         $sql = "DELETE FROM orders"; // verwijderd alles in de "orders" tabel
 
-        if($this->conn->query($sql)===true){
+        $stmt = $this->conn->prepare($sql);
+
+        if($stmt->execute()){
             return "data deleted successfully";
         }
         else{
-            return "Error: " . $sql . "<br>" . $this->conn->error;
+            return "Error: " . $sql . "<br>" . $stmt->error;
         }
     }
 
@@ -43,24 +48,32 @@ class PizzaGateway
         $pizzaType = $data["type"];
 
         $sql = "INSERT INTO orders (orderID, type)
-                VALUES ($ID, '$pizzaType')";
+                VALUES (?, ?)";
 
-        if($this->conn->query($sql) === true){ // query
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bind_param("is", $ID, $pizzaType);
+
+        if($stmt->execute()){ // query
             return "order placed successfully";
         } else {
-            return "Error: " . $sql . "<br>" . $this->conn->error;
+            return "Error: " . $sql . "<br>" . $stmt->error;
         }
-}
+    }
 
     public function get(int $orderID) : array | false
     {
         $sql = "SELECT * 
                 FROM orders 
-                WHERE orderID = $orderID";
+                WHERE orderID = ?";
 
-        $result = $this->conn->query($sql);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $orderID);
+        $stmt->execute();
 
-       $row = $result->fetch_assoc();
+        $result = $stmt->get_result();
+
+        $row = $result->fetch_assoc();
 
         if(empty($row)){
             return false;
@@ -71,25 +84,33 @@ class PizzaGateway
 
     public function update(int $id, string $type): string
     {
-        $sql = "UPDATE orders SET type='$type' WHERE id=$id";
+        $sql = "UPDATE orders SET type=? WHERE id=?";
 
-        if($this->conn->query($sql)===true){
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bind_param("si", $type, $id);
+
+        if($stmt->execute()){
             return "record updated successfully";
         }
         else{
-            return "Error: " . $sql . "<br>" . $this->conn->error;
+            return "Error: " . $sql . "<br>" . $stmt->error;
         }
     }
 
     public function delete(int $orderID): string
     {
-        $sql = "DELETE FROM orders WHERE orderID=$orderID";
+        $sql = "DELETE FROM orders WHERE orderID=?";
 
-        if($this->conn->query($sql)===true){
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bind_param("i", $orderID);
+
+        if($stmt->execute()){
             return "record deleted successfully";
         }
         else{
-            return "Error: " . $sql . "<br>" . $this->conn->error;
+            return "Error: " . $sql . "<br>" . $stmt->error;
         }
     }
 }
